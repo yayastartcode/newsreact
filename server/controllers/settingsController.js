@@ -70,11 +70,18 @@ const updateSettings = async (req, res) => {
 
         try {
             for (const [key, value] of Object.entries(settings)) {
+                // Normalize URLs for logo/favicon/image settings
+                let normalizedValue = value;
+                if (typeof value === 'string' && (key.includes('logo') || key.includes('favicon') || key.includes('image'))) {
+                    // Strip protocol and domain if present, keep only path
+                    normalizedValue = value.replace(/^https?:\/\/[^\/]+/, '');
+                }
+
                 await connection.query(
                     `INSERT INTO settings (setting_key, setting_value) 
                      VALUES (?, ?) 
                      ON DUPLICATE KEY UPDATE setting_value = ?`,
-                    [key, value, value]
+                    [key, normalizedValue, normalizedValue]
                 );
             }
             await connection.commit();
