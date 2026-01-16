@@ -33,6 +33,15 @@ const {
 const siteTitle = settings.site_name || 'NewsReact';
 const fullTitle = `${title} | ${siteTitle}`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'http://localhost:4321');
+
+// Convert image to full URL for social media
+const getFullImageUrl = (imgPath: string): string => {
+  if (!imgPath) return new URL('/images/og-default.jpg', Astro.site || 'https://beritaonlinenews.com').href;
+  if (imgPath.startsWith('http')) return imgPath;
+  return new URL(imgPath, Astro.site || 'https://beritaonlinenews.com').href;
+};
+
+const fullImageUrl = getFullImageUrl(image);
 ---
 
 <!DOCTYPE html>
@@ -45,7 +54,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'http://localhost
   <!-- Open Graph -->
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
-  <meta property="og:image" content={image} />
+  <meta property="og:image" content={fullImageUrl} />
   <meta property="og:url" content={canonicalUrl} />
   <meta property="og:type" content={type} />
   <meta property="og:site_name" content={siteTitle} />
@@ -61,7 +70,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'http://localhost
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={fullTitle} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={image} />
+  <meta name="twitter:image" content={fullImageUrl} />
   
   <!-- Canonical -->
   <link rel="canonical" href={canonicalUrl} />
