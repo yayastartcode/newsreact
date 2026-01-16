@@ -3,6 +3,7 @@ import react from '@astrojs/react';
 import node from '@astrojs/node';
 
 export default defineConfig({
+    site: process.env.PUBLIC_SITE_URL || 'https://beritaonlinenews.com',
     integrations: [react()],
     output: 'server',
     adapter: node({

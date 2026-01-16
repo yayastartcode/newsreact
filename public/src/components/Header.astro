@@ -16,8 +16,7 @@ try {
   console.error('Failed to fetch settings');
 }
 
-const API_SERVER = 'http://127.0.0.1:5001';
-const logoUrl = settings.logo ? API_SERVER + settings.logo : null;
+const logoUrl = settings.logo || null;
 const siteName = settings.site_name || 'NewsReact';
 
 // Format current date
