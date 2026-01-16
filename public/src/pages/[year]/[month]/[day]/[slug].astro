@@ -120,7 +120,11 @@ const articleImage = article ? getImageUrl(article.featured_image) : '';
 const articlePublishedAt = article ? article.published_at : '';
 const articleAuthorName = article ? article.author_name : '';
 const articleAuthorAvatar = article ? getImageUrl(article.author_avatar) : '';
-const articleContent = article ? renderContent(article.content) : '';
+// Parse content if it's a JSON string
+const parsedContent = article && article.content 
+  ? (typeof article.content === 'string' ? JSON.parse(article.content) : article.content)
+  : null;
+const articleContent = parsedContent ? renderContent(parsedContent) : '';
 const viewCount = article ? (article.view_count || 0) : 0;
 const hasTags = article && article.tags && article.tags.length > 0;
 const hasRelated = relatedArticles && relatedArticles.length > 0;
