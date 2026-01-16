@@ -22,12 +22,10 @@ try {
   console.error('Failed to fetch category articles');
 }
 
-const API_SERVER = 'http://127.0.0.1:5001';
-
 function getImageUrl(path: string | null) {
   if (!path) return 'https://placehold.co/400x250/1e40af/ffffff?text=No+Image';
   if (path.startsWith('http')) return path;
-  return API_SERVER + path;
+  return path;
 }
 
 function formatDate(dateStr: string) {

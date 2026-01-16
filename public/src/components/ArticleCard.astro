@@ -28,12 +28,11 @@ const formatDate = (dateStr: string) => {
   }).format(date);
 };
 
-// Helper to get full image URL from Express server
-const API_SERVER = 'http://127.0.0.1:5001';
+// Helper to get image URL (already served by Nginx at /uploads)
 const getImageUrl = (path: string | undefined): string => {
   if (!path) return 'https://placehold.co/800x450/1e40af/ffffff?text=No+Image';
   if (path.startsWith('http')) return path;
-  return API_SERVER + path;
+  return path; // Path is already correct (e.g., /uploads/...)
 };
 
 const imageUrl = getImageUrl(article.featured_image);
