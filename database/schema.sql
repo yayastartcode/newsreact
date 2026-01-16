@@ -57,6 +57,7 @@ CREATE TABLE articles (
     status ENUM('draft', 'published') DEFAULT 'draft',
     view_count INT DEFAULT 0,
     is_featured BOOLEAN DEFAULT FALSE,
+    is_demo BOOLEAN DEFAULT FALSE, -- Untuk fitur demo data
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -67,6 +68,7 @@ CREATE TABLE articles (
     INDEX idx_category_status (category_id, status, published_at DESC), -- Optimize "Category Page" query
     INDEX idx_author (author_id),
     INDEX idx_is_featured (is_featured, status, published_at DESC), -- Optimize "Featured News" query
+    INDEX idx_is_demo (is_demo), -- Optimize Demo Data cleanup
     FULLTEXT idx_search (title, excerpt) -- Optimize Search
 );
 
