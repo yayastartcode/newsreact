@@ -64,7 +64,7 @@ const otherPosts = articles.slice(1);
     <!-- Featured Post (Big) -->
     {featuredPost && (
       <a href={getArticleUrl(featuredPost)} class="featured-post">
-        <img src={getImageUrl(featuredPost.featured_image)} alt={featuredPost.title} class="featured-img" />
+        <img src={getImageUrl(featuredPost.featured_image)} alt={featuredPost.title} class="featured-img" loading="lazy" />
         <div class="featured-meta">
           <span class="post-date">● {formatDate(featuredPost.published_at)}</span>
         </div>
@@ -88,7 +88,7 @@ const otherPosts = articles.slice(1);
               <span class="author">👤 {post.author_name}</span>
             </div>
           </div>
-          <img src={getImageUrl(post.featured_image)} alt={post.title} class="small-img" />
+          <img src={getImageUrl(post.featured_image)} alt={post.title} class="small-img" loading="lazy" />
         </a>
       ))}
     </div>

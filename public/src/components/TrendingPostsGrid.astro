@@ -71,7 +71,7 @@ function padNumber(num: number) {
     <div class="trending-grid">
       {articles.map((article, index) => (
         <a href={getArticleUrl(article)} class="trending-card">
-          <img src={getImageUrl(article.featured_image)} alt={article.title} class="card-bg" />
+          <img src={getImageUrl(article.featured_image)} alt={article.title} class="card-bg" loading="lazy" />
           <div class="card-overlay">
             <div class="card-header">
               <span class="card-number">{padNumber(index + 1)}</span>

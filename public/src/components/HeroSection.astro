@@ -97,7 +97,7 @@ function getArticleUrl(article: any) {
         {recentArticles.length > 0 ? (
           [...recentArticles, ...recentArticles].map((article) => (
             <a href={getArticleUrl(article)} class="recent-card">
-              <img src={getImageUrl(article.featured_image)} alt={article.title} class="recent-image" />
+              <img src={getImageUrl(article.featured_image)} alt={article.title} class="recent-image" loading="lazy" />
               <div class="recent-content">
                 <span class="recent-date">{formatDate(article.published_at)}</span>
                 <h3 class="recent-title">{article.title}</h3>
@@ -106,7 +106,7 @@ function getArticleUrl(article: any) {
           ))
         ) : (
           <div class="recent-card">
-            <img src="https://placehold.co/800x450/1e40af/ffffff?text=No+Image" alt="No recent" class="recent-image" />
+            <img src="https://placehold.co/800x450/1e40af/ffffff?text=No+Image" alt="No recent" class="recent-image" loading="lazy" />
             <div class="recent-content">
               <span class="recent-date">-</span>
               <h3 class="recent-title">Belum ada artikel</h3>
@@ -129,7 +129,7 @@ function getArticleUrl(article: any) {
               <h4 class="trending-name">{article.title}</h4>
               <span class="trending-views">👁 {article.view_count || 0}</span>
             </div>
-            <img src={getImageUrl(article.featured_image)} alt={article.title} class="trending-thumb" />
+            <img src={getImageUrl(article.featured_image)} alt={article.title} class="trending-thumb" loading="lazy" />
           </a>
         ))
       ) : (

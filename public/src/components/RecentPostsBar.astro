@@ -44,7 +44,7 @@ function getArticleUrl(article: any) {
     <div class="posts-track">
       {[...articles, ...articles].map((article) => (
         <a href={getArticleUrl(article)} class="post-item">
-          <img src={getImageUrl(article.featured_image)} alt={article.title} class="post-thumb" />
+          <img src={getImageUrl(article.featured_image)} alt={article.title} class="post-thumb" loading="lazy" />
           <div class="post-info">
             <div class="post-meta">
               <span class="post-date">● {formatDate(article.published_at)}</span>
