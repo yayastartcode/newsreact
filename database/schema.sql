@@ -118,10 +118,11 @@ CREATE TABLE menu_items (
 
 -- 10. Settings (Global Configuration)
 CREATE TABLE settings (
-    `key` VARCHAR(50) PRIMARY KEY,
-    `value` TEXT,
-    `is_public` BOOLEAN DEFAULT FALSE,
-    `group` VARCHAR(50) DEFAULT 'general'
+    setting_key VARCHAR(50) PRIMARY KEY,
+    setting_value TEXT,
+    setting_type VARCHAR(20) DEFAULT 'text',
+    setting_group VARCHAR(50) DEFAULT 'general',
+    is_public BOOLEAN DEFAULT FALSE
 );
 
 -- =============================================
@@ -142,7 +143,7 @@ INSERT INTO categories (name, slug, description) VALUES
 ('Teknologi', 'teknologi', 'Berita teknologi dan gadget');
 
 -- Sample settings
-INSERT INTO settings (`key`, `value`, `is_public`, `group`) VALUES
+INSERT INTO settings (setting_key, setting_value, is_public, setting_group) VALUES
 ('site_name', 'NewsReact', 1, 'general'),
 ('site_description', 'Portal berita modern dan terpercaya', 1, 'general'),
 ('footer_text', '© 2026 NewsReact. All rights reserved.', 1, 'general'),
