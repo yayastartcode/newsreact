@@ -30,9 +30,9 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|webm|pdf/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|ico|mp4|webm|pdf/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const mimetype = allowedTypes.test(file.mimetype) || file.mimetype === 'image/vnd.microsoft.icon' || file.mimetype === 'image/x-icon';
 
     if (extname && mimetype) {
         return cb(null, true);

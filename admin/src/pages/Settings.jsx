@@ -74,9 +74,17 @@ export default function Settings() {
             const { data } = await api.post('/admin/settings/logo', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
-            setSettings({ ...settings, [type]: data.url })
+
+            // Update state
+            const newSettings = { ...settings, [type]: data.url }
+            setSettings(newSettings)
+
+            // Auto-save to database immediately
+            await api.put('/admin/settings', { settings: newSettings })
+            alert(`${type === 'favicon' ? 'Favicon' : 'Logo'} berhasil diupload dan disimpan!`)
         } catch (error) {
             alert('Gagal upload logo')
+            console.error('Upload error:', error)
         } finally {
             setUploadingLogo(null)
         }
