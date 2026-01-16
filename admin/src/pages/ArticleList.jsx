@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
@@ -7,16 +7,40 @@ export default function ArticleList() {
     const [articles, setArticles] = useState([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('all')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchInput, setSearchInput] = useState('')
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const limit = 20
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearchQuery(searchInput)
+            setPage(1) // Reset to page 1 when search changes
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchInput])
 
     useEffect(() => {
         fetchArticles()
-    }, [filter])
+    }, [filter, searchQuery, page])
 
     const fetchArticles = async () => {
         try {
-            const params = filter !== 'all' ? `?status=${filter}` : ''
-            const { data } = await api.get(`/admin/articles${params}`)
+            setLoading(true)
+            const params = new URLSearchParams()
+            params.append('page', page)
+            params.append('limit', limit)
+            if (filter !== 'all') params.append('status', filter)
+            if (searchQuery) params.append('search', searchQuery)
+
+            const { data } = await api.get(`/admin/articles?${params}`)
             setArticles(data.articles)
+
+            // Calculate total pages (backend should ideally return this, but we estimate)
+            const hasMore = data.articles.length === limit
+            setTotalPages(hasMore ? page + 1 : page)
         } catch (error) {
             console.error('Failed to fetch articles:', error)
         } finally {
@@ -65,84 +89,120 @@ export default function ArticleList() {
             </div>
 
             <div className="card">
-                <div className="card-header flex justify-between items-center">
-                    <span>Daftar Artikel</span>
-                    <select
-                        className="form-select"
-                        style={{ width: 'auto' }}
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                    >
-                        <option value="all">Semua</option>
-                        <option value="published">Published</option>
-                        <option value="draft">Draft</option>
-                    </select>
+                <div className="card-header">
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Cari artikel..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            style={{ flex: '1', minWidth: '200px', maxWidth: '400px' }}
+                        />
+                        <select
+                            className="form-select"
+                            style={{ width: 'auto' }}
+                            value={filter}
+                            onChange={(e) => { setFilter(e.target.value); setPage(1); }}
+                        >
+                            <option value="all">Semua</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
                 </div>
 
                 {loading ? (
                     <div className="card-body">Loading...</div>
                 ) : (
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Judul</th>
-                                <th>Kategori</th>
-                                <th>Status</th>
-                                <th>Views</th>
-                                <th>Tanggal</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {articles.length === 0 ? (
+                    <>
+                        <table className="table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="6" className="text-center text-light">
-                                        Belum ada artikel
-                                    </td>
+                                    <th>Judul</th>
+                                    <th>Kategori</th>
+                                    <th>Status</th>
+                                    <th>Views</th>
+                                    <th>Tanggal</th>
+                                    <th></th>
                                 </tr>
-                            ) : (
-                                articles.map((article) => (
-                                    <tr key={article.id}>
-                                        <td>
-                                            <div style={{ fontWeight: 500 }}>{article.title}</div>
-                                            <div className="text-sm text-light">{article.author_name}</div>
-                                        </td>
-                                        <td>{article.category_name}</td>
-                                        <td>
-                                            <span className={`badge badge-${article.status === 'published' ? 'success' : 'warning'}`}>
-                                                {article.status}
-                                            </span>
-                                        </td>
-                                        <td>{article.view_count?.toLocaleString() || 0}</td>
-                                        <td>{formatDate(article.published_at || article.created_at)}</td>
-                                        <td className="text-right">
-                                            <div className="flex gap-1 justify-end">
-                                                <button
-                                                    onClick={() => toggleFeatured(article.id)}
-                                                    className={`btn btn-sm ${article.is_featured ? 'btn-warning' : 'btn-secondary'}`}
-                                                    title={article.is_featured ? 'Hapus dari unggulan' : 'Jadikan unggulan'}
-                                                >
-                                                    {article.is_featured ? '★' : '☆'}
-                                                </button>
-                                                <button
-                                                    onClick={() => navigate(`/articles/${article.id}/edit`)}
-                                                    className="btn btn-sm btn-secondary"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(article.id)}
-                                                    className="btn btn-sm btn-danger"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </div>
+                            </thead>
+                            <tbody>
+                                {articles.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="text-center text-light">
+                                            {searchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada artikel'}
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    articles.map((article) => (
+                                        <tr key={article.id}>
+                                            <td>
+                                                <div style={{ fontWeight: 500 }}>{article.title}</div>
+                                                <div className="text-sm text-light">{article.author_name}</div>
+                                            </td>
+                                            <td>{article.category_name}</td>
+                                            <td>
+                                                <span className={`badge badge-${article.status === 'published' ? 'success' : 'warning'}`}>
+                                                    {article.status}
+                                                </span>
+                                            </td>
+                                            <td>{article.view_count?.toLocaleString() || 0}</td>
+                                            <td>{formatDate(article.published_at || article.created_at)}</td>
+                                            <td className="text-right">
+                                                <div className="flex gap-1 justify-end">
+                                                    <button
+                                                        onClick={() => toggleFeatured(article.id)}
+                                                        className={`btn btn-sm ${article.is_featured ? 'btn-warning' : 'btn-secondary'}`}
+                                                        title={article.is_featured ? 'Hapus dari unggulan' : 'Jadikan unggulan'}
+                                                    >
+                                                        {article.is_featured ? '★' : '☆'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/articles/${article.id}/edit`)}
+                                                        className="btn btn-sm btn-secondary"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(article.id)}
+                                                        className="btn btn-sm btn-danger"
+                                                    >
+                                                        Hapus
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+
+                        {/* Pagination */}
+                        {articles.length > 0 && (
+                            <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div className="text-light">
+                                    Halaman {page}
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                    >
+                                        ← Prev
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => setPage(p => p + 1)}
+                                        disabled={articles.length < limit}
+                                    >
+                                        Next →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

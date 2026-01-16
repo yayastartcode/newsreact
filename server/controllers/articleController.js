@@ -276,7 +276,7 @@ const searchArticles = async (req, res) => {
 
 const getAllArticles = async (req, res) => {
     try {
-        const { page = 1, limit = 20, status } = req.query;
+        const { page = 1, limit = 20, status, search } = req.query;
         const { limit: limitNum, offset } = paginate(page, limit);
 
         let query = `
@@ -290,18 +290,28 @@ const getAllArticles = async (req, res) => {
       JOIN categories c ON a.category_id = c.id
     `;
         const params = [];
+        const conditions = [];
 
         // Author can only see their own articles
         if (req.user.role !== 'admin') {
-            query += ' WHERE a.author_id = ?';
+            conditions.push('a.author_id = ?');
             params.push(req.user.id);
-            if (status) {
-                query += ' AND a.status = ?';
-                params.push(status);
-            }
-        } else if (status) {
-            query += ' WHERE a.status = ?';
+        }
+
+        // Status filter
+        if (status) {
+            conditions.push('a.status = ?');
             params.push(status);
+        }
+
+        // Search filter
+        if (search) {
+            conditions.push('a.title LIKE ?');
+            params.push(`%${search}%`);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
 
         query += ' ORDER BY a.updated_at DESC LIMIT ? OFFSET ?';
