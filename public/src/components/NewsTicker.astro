@@ -1,0 +1,127 @@
+---
+import { fetchApi } from '../lib/api';
+
+// Fetch 5 latest articles
+let articles: any[] = [];
+try {
+  const data = await fetchApi('/articles?limit=5');
+  articles = data.articles || [];
+} catch (e) {
+  console.error('Failed to fetch articles for ticker');
+}
+
+const API_SERVER = 'http://127.0.0.1:5001';
+---
+
+{articles.length > 0 && (
+  <div class="news-ticker-outer">
+    <div class="news-ticker">
+      <div class="ticker-label">
+        <span>TERBARU</span>
+      </div>
+      <div class="ticker-wrapper">
+        <div class="ticker-content">
+          {articles.map((article, index) => (
+            <a href={`/${new Date(article.published_at).getFullYear()}/${String(new Date(article.published_at).getMonth() + 1).padStart(2, '0')}/${String(new Date(article.published_at).getDate()).padStart(2, '0')}/${article.slug}`} class="ticker-item">
+              <span class="ticker-bullet">●</span>
+              {article.title}
+            </a>
+          ))}
+          {/* Duplicate for seamless loop */}
+          {articles.map((article, index) => (
+            <a href={`/${new Date(article.published_at).getFullYear()}/${String(new Date(article.published_at).getMonth() + 1).padStart(2, '0')}/${String(new Date(article.published_at).getDate()).padStart(2, '0')}/${article.slug}`} class="ticker-item" aria-hidden="true">
+              <span class="ticker-bullet">●</span>
+              {article.title}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+<style>
+  .news-ticker-outer {
+    background: var(--color-bg-alt);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .news-ticker {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .ticker-label {
+    background: var(--color-primary);
+    color: white;
+    padding: 0.6rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .ticker-wrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-content {
+    display: flex;
+    animation: ticker 30s linear infinite;
+    white-space: nowrap;
+  }
+
+  .ticker-content:hover {
+    animation-play-state: paused;
+  }
+
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .ticker-item:hover {
+    color: var(--color-primary);
+  }
+
+  .ticker-bullet {
+    color: var(--color-primary);
+    margin-right: 0.5rem;
+    font-size: 0.5rem;
+  }
+
+  @keyframes ticker {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .ticker-label {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.65rem;
+    }
+
+    .ticker-item {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+    }
+  }
+</style>

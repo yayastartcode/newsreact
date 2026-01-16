@@ -1,0 +1,196 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import Pagination from '../components/Pagination.astro';
+import { api } from '../lib/api';
+
+const query = Astro.url.searchParams.get('q') || '';
+const page = Number(Astro.url.searchParams.get('page')) || 1;
+
+let data: any = { articles: [], pagination: { total: 0, totalPages: 1, page: 1 } };
+let error = null;
+
+if (query) {
+  try {
+    data = await api.searchArticles(query, page);
+  } catch (e) {
+    error = 'Terjadi kesalahan saat mencari.';
+  }
+}
+---
+
+<MainLayout title={query ? `Hasil Pencarian: ${query}` : 'Cari Artikel'}>
+  <div class="search-page">
+    <header class="page-header">
+      <h1 class="page-title">Cari Artikel</h1>
+      
+      <form action="/cari" method="get" class="search-form-large">
+        <input 
+          type="search" 
+          name="q" 
+          value={query}
+          placeholder="Ketik kata kunci..." 
+          class="search-input"
+          autofocus
+        />
+        <button type="submit" class="btn btn-primary">Cari</button>
+      </form>
+    </header>
+    
+    {error && (
+      <div class="error-message">{error}</div>
+    )}
+    
+    {query && !error && (
+      <div class="search-results">
+        <p class="results-info">
+          {data.pagination.total > 0 ? (
+            <>Ditemukan <strong>{data.pagination.total}</strong> hasil untuk "<strong>{query}</strong>"</>
+          ) : (
+            <>Tidak ada hasil untuk "<strong>{query}</strong>"</>
+          )}
+        </p>
+        
+        {data.articles.length > 0 && (
+          <>
+            <div class="articles-grid">
+              {data.articles.map((article: any) => (
+                <ArticleCard article={article} />
+              ))}
+            </div>
+            
+            <Pagination 
+              currentPage={data.pagination.page} 
+              totalPages={data.pagination.totalPages}
+              baseUrl={`/cari?q=${encodeURIComponent(query)}`}
+            />
+          </>
+        )}
+        
+        {data.articles.length === 0 && (
+          <div class="no-results">
+            <p>Tips pencarian:</p>
+            <ul>
+              <li>Periksa ejaan kata kunci</li>
+              <li>Gunakan kata kunci yang lebih umum</li>
+              <li>Coba kata kunci yang berbeda</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    )}
+    
+    {!query && (
+      <div class="search-placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <p>Masukkan kata kunci untuk mencari artikel</p>
+      </div>
+    )}
+  </div>
+</MainLayout>
+
+<style>
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-form-large {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: border-color var(--transition-fast);
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+  
+  .results-info {
+    margin-bottom: 1.5rem;
+    color: var(--color-text-light);
+  }
+  
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  @media (max-width: 1024px) {
+    .articles-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .search-form-large {
+      flex-direction: column;
+    }
+  }
+  
+  .error-message {
+    text-align: center;
+    padding: 2rem;
+    color: #dc2626;
+    background: #fef2f2;
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+  }
+  
+  .no-results {
+    text-align: center;
+    padding: 3rem;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-lg);
+  }
+  
+  .no-results p {
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  
+  .no-results ul {
+    list-style: none;
+    color: var(--color-text-light);
+  }
+  
+  .no-results li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .search-placeholder {
+    text-align: center;
+    padding: 4rem 0;
+    color: var(--color-text-light);
+  }
+  
+  .search-placeholder svg {
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+</style>

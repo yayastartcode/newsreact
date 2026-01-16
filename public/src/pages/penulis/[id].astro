@@ -1,0 +1,194 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import { api } from '../../lib/api';
+
+const { id } = Astro.params;
+const page = Number(Astro.url.searchParams.get('page')) || 1;
+
+if (!id) {
+  return Astro.redirect('/404');
+}
+
+let data: any = null;
+let error = null;
+
+try {
+  data = await api.getAuthor(id, page);
+} catch (e) {
+  error = 'Penulis tidak ditemukan.';
+}
+
+const formatDate = (dateStr: string) => {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(dateStr));
+};
+---
+
+{error ? (
+  <MainLayout title="Penulis Tidak Ditemukan">
+    <div class="error-container">
+      <h1>404</h1>
+      <p>{error}</p>
+      <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+    </div>
+  </MainLayout>
+) : (
+  <MainLayout title={data.author.name} description={data.author.bio}>
+    <div class="author-page">
+      <header class="author-header">
+        <div class="author-info">
+          {data.author.avatar ? (
+            <img src={data.author.avatar} alt={data.author.name} class="author-avatar" />
+          ) : (
+            <div class="author-avatar-placeholder">
+              {data.author.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div class="author-details">
+            <h1 class="author-name">{data.author.name}</h1>
+            {data.author.bio && (
+              <p class="author-bio">{data.author.bio}</p>
+            )}
+            <p class="author-meta">
+              <span>Bergabung {formatDate(data.author.created_at)}</span>
+              <span>•</span>
+              <span>{data.pagination.total} artikel</span>
+            </p>
+          </div>
+        </div>
+      </header>
+      
+      <section class="author-articles">
+        <h2 class="section-title">Artikel oleh {data.author.name}</h2>
+        
+        <div class="articles-grid">
+          {data.articles.map((article: any) => (
+            <ArticleCard article={article} />
+          ))}
+        </div>
+        
+        {data.articles.length === 0 && (
+          <p class="no-articles">Belum ada artikel dari penulis ini.</p>
+        )}
+        
+        <Pagination 
+          currentPage={data.pagination.page} 
+          totalPages={data.pagination.totalPages}
+          baseUrl={Astro.url.pathname}
+        />
+      </section>
+    </div>
+  </MainLayout>
+)}
+
+<style>
+  .error-container {
+    text-align: center;
+    padding: 4rem 0;
+  }
+  
+  .error-container h1 {
+    font-size: 6rem;
+    color: var(--color-primary);
+  }
+  
+  .author-header {
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    border-radius: var(--radius-lg);
+    margin-bottom: 2rem;
+  }
+  
+  .author-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  @media (max-width: 640px) {
+    .author-info {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+  
+  .author-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .author-avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+  }
+  
+  .author-name {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 0.5rem;
+  }
+  
+  .author-bio {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.75rem;
+    max-width: 600px;
+  }
+  
+  .author-meta {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  @media (max-width: 640px) {
+    .author-meta {
+      justify-content: center;
+    }
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  @media (max-width: 1024px) {
+    .articles-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .no-articles {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-light);
+  }
+</style>

@@ -1,0 +1,193 @@
+---
+interface Props {
+  article: {
+    id: number;
+    title: string;
+    slug: string;
+    excerpt?: string;
+    featured_image?: string;
+    published_at: string;
+    url: string;
+    author_name?: string;
+    author_avatar?: string;
+    category_name?: string;
+    category_slug?: string;
+    view_count?: number;
+  };
+  featured?: boolean;
+}
+
+const { article, featured = false } = Astro.props;
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+};
+
+// Helper to get full image URL from Express server
+const API_SERVER = 'http://127.0.0.1:5001';
+const getImageUrl = (path: string | undefined): string => {
+  if (!path) return 'https://placehold.co/800x450/1e40af/ffffff?text=No+Image';
+  if (path.startsWith('http')) return path;
+  return API_SERVER + path;
+};
+
+const imageUrl = getImageUrl(article.featured_image);
+const avatarUrl = article.author_avatar ? getImageUrl(article.author_avatar) : null;
+---
+
+<article class:list={['article-card', { featured }]}>
+  <a href={article.url} class="card-image-link">
+    <img 
+      src={imageUrl} 
+      alt={article.title}
+      class="card-image"
+      loading="lazy"
+    />
+    {article.category_name && (
+      <span class="card-category">{article.category_name}</span>
+    )}
+  </a>
+  
+  <div class="card-body">
+    <span class="card-date">{formatDate(article.published_at)}</span>
+    
+    <a href={article.url}>
+      <h3 class="card-title">{article.title}</h3>
+    </a>
+    
+    <div class="card-meta">
+      <span class="meta-views">👁 {article.view_count?.toLocaleString() || 0}</span>
+      {article.author_name && (
+        <span class="meta-author">👤 {article.author_name}</span>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .article-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+  }
+  
+  .article-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+  
+  .card-image-link {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+  
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal);
+  }
+  
+  .article-card:hover .card-image {
+    transform: scale(1.05);
+  }
+  
+  .card-category {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--radius-full);
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-date {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 0.375rem;
+  }
+  
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
+    transition: color var(--transition-fast);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .article-card:hover .card-title {
+    color: var(--color-primary);
+  }
+  
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: auto;
+  }
+  
+  .meta-views,
+  .meta-author {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  /* Featured card style */
+  .featured {
+    grid-column: span 2;
+  }
+  
+  .featured .card-image-link {
+    aspect-ratio: 21 / 9;
+  }
+  
+  .featured .card-title {
+    font-size: 1.5rem;
+  }
+  
+  .featured .card-excerpt {
+    -webkit-line-clamp: 3;
+  }
+  
+  @media (max-width: 768px) {
+    .featured {
+      grid-column: span 1;
+    }
+    
+    .featured .card-image-link {
+      aspect-ratio: 16 / 9;
+    }
+    
+    .featured .card-title {
+      font-size: 1.125rem;
+    }
+  }
+</style>

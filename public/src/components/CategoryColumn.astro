@@ -1,0 +1,214 @@
+---
+import { fetchApi } from '../lib/api';
+
+interface Props {
+  categorySlug: string;
+  title?: string;
+}
+
+const { categorySlug, title: propTitle } = Astro.props;
+
+// Fetch articles from category
+let articles: any[] = [];
+let categoryName = propTitle || categorySlug;
+
+try {
+  const data = await fetchApi(`/categories/${categorySlug}/articles?limit=5`);
+  articles = data.articles || [];
+  if (data.category?.name) {
+    categoryName = propTitle || data.category.name;
+  }
+} catch (e) {
+  console.error('Failed to fetch category articles');
+}
+
+const API_SERVER = 'http://127.0.0.1:5001';
+
+function getImageUrl(path: string | null) {
+  if (!path) return 'https://placehold.co/400x250/1e40af/ffffff?text=No+Image';
+  if (path.startsWith('http')) return path;
+  return API_SERVER + path;
+}
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+  
+  if (hours < 1) return 'Baru saja';
+  if (hours < 24) return `${hours} jam lalu`;
+  if (days < 7) return `${days} hari lalu`;
+  if (days < 30) return `${Math.floor(days / 7)} minggu lalu`;
+  return `${Math.floor(days / 30)} bulan lalu`;
+}
+
+function getArticleUrl(article: any) {
+  const date = new Date(article.published_at);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `/${year}/${month}/${day}/${article.slug}`;
+}
+
+const featuredPost = articles[0];
+const otherPosts = articles.slice(1);
+---
+
+{articles.length > 0 && (
+  <div class="cat-column">
+    <h3 class="cat-title">
+      {categoryName}
+      <span class="cat-line"></span>
+    </h3>
+
+    <!-- Featured Post (Big) -->
+    {featuredPost && (
+      <a href={getArticleUrl(featuredPost)} class="featured-post">
+        <img src={getImageUrl(featuredPost.featured_image)} alt={featuredPost.title} class="featured-img" />
+        <div class="featured-meta">
+          <span class="post-date">● {formatDate(featuredPost.published_at)}</span>
+        </div>
+        <h4 class="featured-title">{featuredPost.title}</h4>
+        <div class="featured-info">
+          <span class="views">👁 {featuredPost.view_count || 0}</span>
+          <span class="author">👤 {featuredPost.author_name}</span>
+        </div>
+      </a>
+    )}
+
+    <!-- Other Posts (Small with thumbnail) -->
+    <div class="other-posts">
+      {otherPosts.map((post) => (
+        <a href={getArticleUrl(post)} class="small-post">
+          <div class="small-content">
+            <span class="post-date">● {formatDate(post.published_at)}</span>
+            <h5 class="small-title">{post.title}</h5>
+            <div class="small-info">
+              <span class="views">👁 {post.view_count || 0}</span>
+              <span class="author">👤 {post.author_name}</span>
+            </div>
+          </div>
+          <img src={getImageUrl(post.featured_image)} alt={post.title} class="small-img" />
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
+<style>
+  .cat-column {
+    min-width: 0;
+  }
+
+  .cat-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .cat-line {
+    flex: 1;
+    height: 2px;
+    background: #ef4444;
+  }
+
+  /* Featured Post */
+  .featured-post {
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .featured-img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .featured-meta {
+    margin-bottom: 0.25rem;
+  }
+
+  .post-date {
+    font-size: 0.75rem;
+    color: #ef4444;
+  }
+
+  .featured-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.375rem;
+    color: #1e293b;
+  }
+
+  .featured-info {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  /* Small Posts */
+  .other-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .small-post {
+    display: flex;
+    gap: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .small-post:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .small-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .small-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0.25rem 0 0.25rem;
+    color: #1e293b;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .small-info {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  .small-img {
+    width: 90px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  /* Hover */
+  .featured-post:hover .featured-title,
+  .small-post:hover .small-title {
+    color: #ef4444;
+  }
+</style>

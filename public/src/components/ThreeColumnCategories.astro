@@ -1,0 +1,49 @@
+---
+import { fetchApi } from '../lib/api';
+import CategoryColumn from './CategoryColumn.astro';
+
+// Fetch settings
+let settings: any = {};
+try {
+  settings = await fetchApi('/settings');
+} catch (e) {
+  console.error('Failed to fetch settings');
+}
+
+// Get category slugs from settings (support up to 3 columns)
+const column1 = settings.category_column_1 || '';
+const column2 = settings.category_column_2 || '';
+const column3 = settings.category_column_3 || '';
+
+// Only render if at least one column is configured
+const hasColumns = column1 || column2 || column3;
+---
+
+{hasColumns && (
+  <section class="three-columns">
+    {column1 && <CategoryColumn categorySlug={column1} />}
+    {column2 && <CategoryColumn categorySlug={column2} />}
+    {column3 && <CategoryColumn categorySlug={column3} />}
+  </section>
+)}
+
+<style>
+  .three-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .three-columns {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .three-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

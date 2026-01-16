@@ -1,0 +1,600 @@
+---
+import MainLayout from '../../../../layouts/MainLayout.astro';
+import ArticleCard from '../../../../components/ArticleCard.astro';
+import ShareButtons from '../../../../components/ShareButtons.astro';
+import AdSlot from '../../../../components/AdSlot.astro';
+import { api, fetchApi } from '../../../../lib/api';
+
+const { year, month, day, slug } = Astro.params;
+
+if (!year || !month || !day || !slug) {
+  return Astro.redirect('/404');
+}
+
+let article: any = null;
+let relatedArticles: any[] = [];
+let latestArticles: any[] = [];
+let error: string | null = null;
+
+try {
+  [article, relatedArticles] = await Promise.all([
+    api.getArticle(year, month, day, slug),
+    api.getRelatedArticles(year, month, day, slug, 4)
+  ]);
+  
+  // Fetch latest articles for sidebar
+  const latestData = await api.getArticles(1, 5);
+  latestArticles = latestData.articles || [];
+} catch (e) {
+  error = 'Artikel tidak ditemukan.';
+}
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+const formatShortDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
+  
+  if (diffMonths < 1) {
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Hari ini';
+    if (diffDays === 1) return 'Kemarin';
+    return `${diffDays} hari lalu`;
+  }
+  return `${diffMonths} bulan lalu`;
+};
+
+// Calculate reading time (words per minute)
+const calculateReadingTime = (content: any): number => {
+  if (!content || !content.blocks) return 1;
+  
+  let wordCount = 0;
+  content.blocks.forEach((block: any) => {
+    if (block.data?.text) {
+      wordCount += block.data.text.split(/\s+/).length;
+    }
+    if (block.data?.items) {
+      block.data.items.forEach((item: string) => {
+        wordCount += item.split(/\s+/).length;
+      });
+    }
+  });
+  
+  const wordsPerMinute = 200;
+  return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+};
+
+const renderContent = (content: any): string => {
+  if (!content || !content.blocks) return '';
+  
+  return content.blocks.map((block: any) => {
+    switch (block.type) {
+      case 'paragraph':
+        return '<p>' + block.data.text + '</p>';
+      case 'header':
+        return '<h' + block.data.level + '>' + block.data.text + '</h' + block.data.level + '>';
+      case 'image':
+        const caption = block.data.caption || '';
+        const figcaption = caption ? '<figcaption>' + caption + '</figcaption>' : '';
+        return '<figure><img src="' + block.data.url + '" alt="' + caption + '" />' + figcaption + '</figure>';
+      case 'quote':
+        const cite = block.data.caption ? '<cite>— ' + block.data.caption + '</cite>' : '';
+        return '<blockquote><p>' + block.data.text + '</p>' + cite + '</blockquote>';
+      case 'list':
+        const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+        const items = block.data.items.map((item: string) => '<li>' + item + '</li>').join('');
+        return '<' + tag + '>' + items + '</' + tag + '>';
+      case 'embed':
+        return '<div class="embed-container"><iframe src="' + block.data.embed + '" frameborder="0" allowfullscreen></iframe></div>';
+      default:
+        return '';
+    }
+  }).join('');
+};
+
+const fullUrl = Astro.url.href;
+
+// Helper to get full image URL from Express server
+const API_SERVER = 'http://127.0.0.1:5001';
+const getImageUrl = (path: string | undefined): string => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return API_SERVER + path;
+};
+
+// Prepare safe values
+const articleTitle = article ? article.title : '';
+const articleExcerpt = article ? (article.excerpt || '') : '';
+const articleImage = article ? getImageUrl(article.featured_image) : '';
+const articlePublishedAt = article ? article.published_at : '';
+const articleAuthorName = article ? article.author_name : '';
+const articleAuthorAvatar = article ? getImageUrl(article.author_avatar) : '';
+const articleContent = article ? renderContent(article.content) : '';
+const viewCount = article ? (article.view_count || 0) : 0;
+const hasTags = article && article.tags && article.tags.length > 0;
+const hasRelated = relatedArticles && relatedArticles.length > 0;
+const readingTime = article ? calculateReadingTime(article.content) : 1;
+---
+
+{error && (
+  <MainLayout title="Artikel Tidak Ditemukan">
+    <div class="error-container">
+      <h1>404</h1>
+      <p>{error}</p>
+      <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+    </div>
+  </MainLayout>
+)}
+
+{!error && article && (
+  <MainLayout 
+    title={articleTitle}
+    description={articleExcerpt}
+    image={articleImage}
+    type="article"
+    publishedTime={articlePublishedAt}
+    author={articleAuthorName}
+  >
+    <div class="article-layout">
+      <!-- Main Content -->
+      <article class="article-content-wrapper">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb">
+          <a href="/">Home</a>
+          <span class="separator">›</span>
+          <a href={`/kategori/${article.category_slug}`}>{article.category_name}</a>
+        </nav>
+        
+        <!-- Title -->
+        <h1 class="article-title">{articleTitle}</h1>
+        
+        <!-- Reading Time & Social Share -->
+        <div class="meta-row-1">
+          <span class="reading-time">⏱ {readingTime} menit membaca</span>
+          <div class="share-icons">
+            <ShareButtons url={fullUrl} title={articleTitle} compact={true} />
+          </div>
+        </div>
+        
+        <!-- Date, Views, Author -->
+        <div class="meta-row-2">
+          <span class="post-date">{formatDate(articlePublishedAt)}</span>
+          <span class="views-count">👁 {viewCount.toLocaleString()}</span>
+          <span class="author">👤 {articleAuthorName}</span>
+        </div>
+        
+        <!-- Featured Image -->
+        {articleImage && (
+          <figure class="featured-image">
+            <img src={articleImage} alt={articleTitle} />
+          </figure>
+        )}
+        
+        <AdSlot position="in_article" />
+        
+        <!-- Article Content -->
+        <div class="article-body" set:html={articleContent} />
+        
+        <!-- Tags -->
+        {hasTags && (
+          <div class="article-tags">
+            <span>Tags:</span>
+            {article.tags.map((tag: any) => (
+              <a href={`/tag/${tag.slug}`} class="tag tag-outline">{tag.name}</a>
+            ))}
+          </div>
+        )}
+        
+        <AdSlot position="in_article" />
+      </article>
+      
+      <!-- Sidebar -->
+      <aside class="article-sidebar">
+        <div class="sidebar-widget">
+          <h3 class="widget-title">Latest Post</h3>
+          <div class="latest-posts-list">
+            {latestArticles.map((post: any) => (
+              <div class="latest-post-item">
+                <div class="latest-post-content">
+                  <span class="post-date-badge">● {formatShortDate(post.published_at)}</span>
+                  <a href={post.url} class="post-title">{post.title}</a>
+                  <div class="post-meta">
+                    <span class="views">👁 {post.view_count?.toLocaleString() || 0}</span>
+                    <span class="author">👤 {post.author_name}</span>
+                  </div>
+                </div>
+                {post.featured_image && (
+                  <a href={post.url} class="post-thumb">
+                    <img src={getImageUrl(post.featured_image)} alt={post.title} />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <AdSlot position="sidebar" />
+      </aside>
+    </div>
+    
+    <!-- Related Articles -->
+    {hasRelated && (
+      <section class="related-articles">
+        <h2 class="section-title">Artikel Terkait</h2>
+        <div class="related-grid">
+          {relatedArticles.map((related: any) => (
+            <ArticleCard article={related} />
+          ))}
+        </div>
+      </section>
+    )}
+  </MainLayout>
+)}
+
+<style>
+  .error-container {
+    text-align: center;
+    padding: 4rem 0;
+  }
+  
+  .error-container h1 {
+    font-size: 6rem;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+  
+  .error-container p {
+    color: var(--color-text-light);
+    margin-bottom: 2rem;
+  }
+  
+  /* Two Column Layout - Container 1000px */
+  .article-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  @media (max-width: 1024px) {
+    .article-layout {
+      max-width: 100%;
+      padding: 0 1rem;
+    }
+  }
+  
+  @media (max-width: 900px) {
+    .article-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+  
+  .breadcrumb a {
+    color: var(--color-text-light);
+  }
+  
+  .breadcrumb a:hover {
+    color: var(--color-primary);
+  }
+  
+  .breadcrumb .separator {
+    color: var(--color-text-light);
+  }
+  
+  /* Title */
+  .article-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1e293b;
+    margin-bottom: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .article-title {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Meta Row 1: Reading Time & Share */
+  .meta-row-1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .reading-time {
+    font-size: 0.875rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
+  }
+  
+  .share-icons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Meta Row 2: Date, Views, Author */
+  .meta-row-2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+  
+  .views-count,
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  /* Featured Image */
+  .featured-image {
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .featured-image img {
+    width: 100%;
+    height: auto;
+  }
+  
+  /* Article Body */
+  .article-body {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: #374151;
+  }
+  
+  .article-body :global(p) {
+    margin-bottom: 1.25rem;
+  }
+  
+  .article-body :global(h2),
+  .article-body :global(h3) {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  
+  .article-body :global(img) {
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  
+  .article-body :global(figure) {
+    margin: 1.5rem 0;
+  }
+  
+  .article-body :global(figcaption) {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+  }
+  
+  .article-body :global(blockquote) {
+    border-left: 4px solid var(--color-primary);
+    padding-left: 1.25rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #64748b;
+  }
+  
+  .article-body :global(ul),
+  .article-body :global(ol) {
+    margin: 1.25rem 0;
+    padding-left: 1.5rem;
+  }
+  
+  .article-body :global(li) {
+    margin-bottom: 0.5rem;
+  }
+  
+  .article-body :global(.embed-container) {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+  }
+  
+  .article-body :global(.embed-container iframe) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Tags */
+  .article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .article-tags span {
+    font-weight: 500;
+    color: #64748b;
+  }
+  
+  .tag-outline {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+    transition: all 0.2s;
+  }
+  
+  .tag-outline:hover {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+  
+  /* Sidebar */
+  .article-sidebar {
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+  }
+  
+  .sidebar-widget {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .widget-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--color-primary);
+  }
+  
+  /* Latest Posts List */
+  .latest-posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .latest-post-item {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .latest-post-content {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .post-date-badge {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  
+  .post-date-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    margin-right: 0.375rem;
+  }
+  
+  .latest-post-content .post-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+    margin: 0.25rem 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .latest-post-content .post-title:hover {
+    color: var(--color-primary);
+  }
+  
+  .latest-post-content .post-meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  
+  .post-thumb {
+    width: 80px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+  
+  .post-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* Related Articles */
+  .related-articles {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1e293b;
+  }
+  
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1024px) {
+    .related-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .related-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

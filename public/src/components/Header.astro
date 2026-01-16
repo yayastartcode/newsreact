@@ -1,0 +1,463 @@
+---
+import { api, fetchApi } from '../lib/api';
+
+let menuItems: any[] = [];
+let settings: any = {};
+
+try {
+  menuItems = await fetchApi('/menu');
+} catch (e) {
+  console.error('Failed to fetch menu');
+}
+
+try {
+  settings = await fetchApi('/settings');
+} catch (e) {
+  console.error('Failed to fetch settings');
+}
+
+const API_SERVER = 'http://127.0.0.1:5001';
+const logoUrl = settings.logo ? API_SERVER + settings.logo : null;
+const siteName = settings.site_name || 'NewsReact';
+
+// Format current date
+const now = new Date();
+const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+const formattedDate = now.toLocaleDateString('id-ID', options);
+
+// Social links from settings
+const socialLinks = [
+  { key: 'facebook', url: settings.social_facebook, icon: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z' },
+  { key: 'twitter', url: settings.social_twitter, icon: 'M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z' },
+  { key: 'instagram', url: settings.social_instagram, icon: 'M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z' },
+  { key: 'youtube', url: settings.social_youtube, icon: 'M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z M9.75 15.02l5.75-3.27-5.75-3.27v6.54z' }
+].filter(s => s.url);
+---
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <div class="container">
+    <div class="top-bar-inner">
+      <div class="top-bar-date">
+        {formattedDate}
+      </div>
+      {socialLinks.length > 0 && (
+        <div class="top-bar-social">
+          {socialLinks.map((social) => (
+            <a href={social.url} target="_blank" rel="noopener noreferrer" class="social-link" aria-label={social.key}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d={social.icon}></path>
+              </svg>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="container">
+    <div class="header-inner">
+      <a href="/" class="logo">
+        {logoUrl ? (
+          <img src={logoUrl} alt={siteName} class="logo-img" />
+        ) : (
+          <><span class="logo-text">News</span><span class="logo-accent">React</span></>
+        )}
+      </a>
+      
+      <nav class="nav" id="nav">
+        <a href="/" class="nav-link">Beranda</a>
+        {menuItems.map((item) => (
+          <a 
+            href={item.computed_url || item.url} 
+            class="nav-link"
+            target={item.target || '_self'}
+          >
+            {item.title}
+          </a>
+        ))}
+      </nav>
+      
+      <div class="header-actions">
+        <!-- Search Toggle Button -->
+        <button class="search-toggle" id="search-toggle" aria-label="Search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </button>
+        
+        <!-- Expandable Search Form -->
+        <div class="search-container" id="search-container">
+          <form action="/cari" method="get" class="search-form">
+            <input type="search" name="q" placeholder="Cari berita..." class="search-input" id="search-input" />
+            <button type="submit" class="search-btn" aria-label="Search">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            </button>
+            <button type="button" class="search-close" id="search-close" aria-label="Close search">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </form>
+        </div>
+        
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Top Bar */
+  .top-bar {
+    background: #f4f4f4;
+    color: #333;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .top-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+  
+  .top-bar-date {
+    font-weight: 400;
+  }
+  
+  .top-bar-social {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .social-link {
+    color: #333;
+    opacity: 0.7;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .social-link:hover {
+    opacity: 1;
+    color: var(--color-primary);
+  }
+  
+  @media (max-width: 768px) {
+    .top-bar-date {
+      font-size: 0.75rem;
+    }
+    
+    .top-bar-social {
+      gap: 0.5rem;
+    }
+    
+    .social-link svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  /* Main Header */
+  .header {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 5rem;
+    gap: 2rem;
+  }
+  
+  .logo {
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex;
+    flex-shrink: 0;
+  }
+  
+  .logo-text {
+    color: var(--color-text-dark);
+  }
+  
+  .logo-accent {
+    color: var(--color-primary);
+  }
+  
+  .logo-img {
+    height: 5rem;
+    width: auto;
+    object-fit: contain;
+  }
+  
+  .nav {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+  
+  .nav-link:hover {
+    background: var(--color-bg-alt);
+    color: var(--color-primary);
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  
+  /* Search Toggle Button */
+  .search-toggle {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+  }
+  
+  .search-toggle:hover {
+    background: var(--color-bg-alt);
+    color: var(--color-primary);
+  }
+  
+  /* Expandable Search Container */
+  .search-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-bg);
+    padding: 1rem;
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 200;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .search-container.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .search-form {
+    display: flex;
+    align-items: center;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-full);
+    padding: 0.5rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    gap: 0.5rem;
+  }
+  
+  .search-input {
+    border: none;
+    background: none;
+    padding: 0.75rem;
+    font-size: 1rem;
+    width: 100%;
+    color: var(--color-text);
+  }
+  
+  .search-input:focus {
+    outline: none;
+  }
+  
+  .search-input::placeholder {
+    color: var(--color-text-light);
+  }
+  
+  .search-btn {
+    background: var(--color-primary);
+    border: none;
+    padding: 0.75rem;
+    cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+  }
+  
+  .search-btn:hover {
+    background: var(--color-primary-dark);
+  }
+  
+  .search-close {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--color-text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+  }
+  
+  .search-close:hover {
+    color: var(--color-text);
+  }
+  
+  .menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--color-text);
+  }
+  
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .header-inner {
+      height: 6rem;
+      gap: 1rem;
+    }
+    
+    .logo-img {
+      height: 5rem;
+    }
+    
+    .nav {
+      display: none;
+      position: absolute;
+      top: 6rem;
+      left: 0;
+      right: 0;
+      background: var(--color-bg);
+      flex-direction: column;
+      padding: 1rem;
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      overflow-y: auto;
+      max-height: calc(100vh - 4rem);
+    }
+    
+    .nav.active {
+      display: flex;
+    }
+    
+    .nav-link {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+    }
+    
+    .menu-toggle {
+      display: flex;
+    }
+  }
+  
+  @media (min-width: 769px) {
+    .search-container {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      transform: translateY(-10px);
+    }
+    
+    .search-container.active {
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  const menuToggle = document.getElementById('menu-toggle');
+  const nav = document.getElementById('nav');
+  const searchToggle = document.getElementById('search-toggle');
+  const searchContainer = document.getElementById('search-container');
+  const searchClose = document.getElementById('search-close');
+  const searchInput = document.getElementById('search-input');
+  
+  // Menu toggle
+  menuToggle?.addEventListener('click', () => {
+    nav?.classList.toggle('active');
+    // Close search if open
+    searchContainer?.classList.remove('active');
+  });
+  
+  // Search toggle
+  searchToggle?.addEventListener('click', () => {
+    searchContainer?.classList.add('active');
+    searchInput?.focus();
+    // Close nav if open
+    nav?.classList.remove('active');
+  });
+  
+  // Search close
+  searchClose?.addEventListener('click', () => {
+    searchContainer?.classList.remove('active');
+  });
+  
+  // Close search on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchContainer?.classList.remove('active');
+    }
+  });
+  
+  // Close search on click outside
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!searchContainer?.contains(target) && !searchToggle?.contains(target)) {
+      searchContainer?.classList.remove('active');
+    }
+  });
+</script>

@@ -1,0 +1,119 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import { api } from '../../lib/api';
+
+const { slug } = Astro.params;
+const page = Number(Astro.url.searchParams.get('page')) || 1;
+
+if (!slug) {
+  return Astro.redirect('/404');
+}
+
+let data: any = null;
+let error = null;
+
+try {
+  data = await api.getTagArticles(slug, page);
+} catch (e) {
+  error = 'Tag tidak ditemukan.';
+}
+---
+
+{error ? (
+  <MainLayout title="Tag Tidak Ditemukan">
+    <div class="error-container">
+      <h1>404</h1>
+      <p>{error}</p>
+      <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+    </div>
+  </MainLayout>
+) : (
+  <MainLayout title={`Tag: ${data.tag.name}`}>
+    <div class="tag-page">
+      <header class="page-header">
+        <span class="tag-label">Tag</span>
+        <h1 class="page-title">#{data.tag.name}</h1>
+        <p class="article-count">{data.pagination.total} artikel</p>
+      </header>
+      
+      <div class="articles-grid">
+        {data.articles.map((article: any) => (
+          <ArticleCard article={article} />
+        ))}
+      </div>
+      
+      {data.articles.length === 0 && (
+        <p class="no-articles">Belum ada artikel dengan tag ini.</p>
+      )}
+      
+      <Pagination 
+        currentPage={data.pagination.page} 
+        totalPages={data.pagination.totalPages}
+        basePath={`/tag/${slug}/page`}
+      />
+    </div>
+  </MainLayout>
+)}
+
+<style>
+  .error-container {
+    text-align: center;
+    padding: 4rem 0;
+  }
+  
+  .error-container h1 {
+    font-size: 6rem;
+    color: var(--color-primary);
+  }
+  
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .tag-label {
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .page-title {
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin: 0.5rem 0;
+  }
+  
+  .article-count {
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+  }
+  
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  @media (max-width: 1024px) {
+    .articles-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .no-articles {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-light);
+  }
+</style>

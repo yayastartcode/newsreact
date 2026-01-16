@@ -1,0 +1,58 @@
+---
+import { api } from '../lib/api';
+
+interface Props {
+  position: 'header' | 'sidebar' | 'in_article' | 'footer';
+}
+
+const { position } = Astro.props;
+
+let ads: any[] = [];
+try {
+  ads = await api.getAds(position);
+} catch (e) {
+  // Silent fail - ads are not critical
+}
+---
+
+{ads.length > 0 && (
+  <div class={`ad-slot ad-${position}`}>
+    {ads.map((ad) => (
+      <div class="ad-container" set:html={ad.code} />
+    ))}
+  </div>
+)}
+
+<style>
+  .ad-slot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .ad-header {
+    padding: 0.5rem 0;
+    background: var(--color-bg-alt);
+  }
+  
+  .ad-footer {
+    padding: 1rem 0;
+    background: var(--color-bg-alt);
+  }
+  
+  .ad-sidebar {
+    margin-bottom: 1.5rem;
+  }
+  
+  .ad-in_article {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+  }
+  
+  .ad-container {
+    max-width: 100%;
+    overflow: hidden;
+  }
+</style>

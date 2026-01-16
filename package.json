@@ -1,0 +1,16 @@
+{
+    "name": "newsreact",
+    "version": "1.0.0",
+    "description": "News CMS with Astro + React + Express",
+    "scripts": {
+        "dev": "concurrently -n server,public,admin -c blue,green,yellow \"npm run dev:server\" \"npm run dev:public\" \"npm run dev:admin\"",
+        "dev:server": "cd server && npm run dev",
+        "dev:public": "cd public && npm run dev",
+        "dev:admin": "cd admin && npm run dev",
+        "install:all": "npm install && cd server && npm install && cd ../public && npm install && cd ../admin && npm install",
+        "build": "cd public && npm run build && cd ../admin && npm run build"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

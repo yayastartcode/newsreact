@@ -1,0 +1,140 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { fetchApi } from '../../lib/api';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+// Fetch page data
+let page = null;
+let error = null;
+
+try {
+    page = await fetchApi(`/pages/${slug}`);
+} catch (e) {
+    error = 'Halaman tidak ditemukan';
+}
+
+if (!page) {
+    return Astro.redirect('/404');
+}
+
+// Render Editor.js content
+const renderContent = (content: any): string => {
+    if (!content || !content.blocks) return '';
+    
+    return content.blocks.map((block: any) => {
+        switch (block.type) {
+            case 'paragraph':
+                return '<p>' + block.data.text + '</p>';
+            case 'header':
+                return '<h' + block.data.level + '>' + block.data.text + '</h' + block.data.level + '>';
+            case 'list':
+                const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                const items = block.data.items.map((item: string) => '<li>' + item + '</li>').join('');
+                return '<' + tag + '>' + items + '</' + tag + '>';
+            case 'quote':
+                return '<blockquote><p>' + block.data.text + '</p>' + 
+                       (block.data.caption ? '<cite>' + block.data.caption + '</cite>' : '') + 
+                       '</blockquote>';
+            default:
+                return '';
+        }
+    }).join('');
+};
+
+const pageTitle = page.meta_title || page.title;
+const pageDescription = page.meta_description || page.excerpt || '';
+const pageContent = renderContent(typeof page.content === 'string' ? JSON.parse(page.content) : page.content);
+---
+
+<MainLayout 
+    title={pageTitle}
+    description={pageDescription}
+>
+    <article class="static-page">
+        <header class="page-header">
+            <h1 class="page-title">{page.title}</h1>
+        </header>
+        
+        <div class="page-content" set:html={pageContent} />
+    </article>
+</MainLayout>
+
+<style>
+    .static-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--color-text);
+        margin: 0;
+    }
+
+    .page-content {
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--color-text);
+    }
+
+    .page-content :global(h2) {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem;
+    }
+
+    .page-content :global(h3) {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.75rem;
+    }
+
+    .page-content :global(p) {
+        margin: 1rem 0;
+    }
+
+    .page-content :global(ul),
+    .page-content :global(ol) {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .page-content :global(li) {
+        margin: 0.5rem 0;
+    }
+
+    .page-content :global(blockquote) {
+        border-left: 4px solid var(--color-primary);
+        padding-left: 1.5rem;
+        margin: 1.5rem 0;
+        font-style: italic;
+        color: var(--color-text-light);
+    }
+
+    .page-content :global(blockquote cite) {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        font-style: normal;
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .page-content {
+            font-size: 1rem;
+        }
+    }
+</style>

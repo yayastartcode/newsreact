@@ -1,0 +1,116 @@
+---
+export const prerender = false;
+
+import MainLayout from '../../layouts/MainLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import { api, fetchApi } from '../../lib/api';
+
+// Get page number from URL params
+const { page: pageParam } = Astro.params;
+const page = Number(pageParam) || 1;
+
+// Redirect page 1 to homepage
+if (page === 1) {
+  return Astro.redirect('/');
+}
+
+// Fetch settings
+let settings: any = {};
+try {
+  settings = await fetchApi('/settings');
+} catch (e) {}
+
+const postsPerPage = Number(settings.posts_per_page) || 9;
+
+let data = { articles: [], pagination: { totalPages: 1, page: 1 } };
+let error = null;
+
+try {
+  data = await api.getArticles(page, postsPerPage);
+} catch (e) {
+  console.error('Error fetching articles:', e);
+  error = 'Gagal memuat artikel. Silakan coba lagi.';
+}
+---
+
+<MainLayout title={`Halaman ${page} - Berita`}>
+  <section class="latest-section">
+    <h2 class="section-title">Halaman {page}</h2>
+    
+    {error ? (
+      <div class="error-message">{error}</div>
+    ) : (
+      <>
+        {data.articles.length > 0 ? (
+          <div class="articles-grid">
+            {data.articles.map((article: any) => (
+              <ArticleCard article={article} />
+            ))}
+          </div>
+        ) : (
+          <div class="no-articles">Tidak ada artikel ditemukan.</div>
+        )}
+        
+        <Pagination 
+          currentPage={page} 
+          totalPages={data.pagination.totalPages}
+          basePath="/page"
+        />
+      </>
+    )}
+  </section>
+</MainLayout>
+
+<style>
+  .latest-section {
+    margin-bottom: 2rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-primary);
+    display: inline-block;
+  }
+  
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1000px) {
+    .articles-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .articles-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .no-articles {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-light);
+  }
+  
+  .error-message {
+    text-align: center;
+    padding: 3rem;
+    color: #dc2626;
+    background: #fef2f2;
+    border-radius: var(--radius-md);
+  }
+</style>

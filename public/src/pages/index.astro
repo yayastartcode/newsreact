@@ -1,0 +1,128 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import HeroSection from '../components/HeroSection.astro';
+import RecentPostsBar from '../components/RecentPostsBar.astro';
+import TrendingPostsGrid from '../components/TrendingPostsGrid.astro';
+import ThreeColumnCategories from '../components/ThreeColumnCategories.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import AdSlot from '../components/AdSlot.astro';
+import Pagination from '../components/Pagination.astro';
+import { api, fetchApi } from '../lib/api';
+
+const page = Number(Astro.url.searchParams.get('page')) || 1;
+
+// Fetch settings
+let settings: any = {};
+try {
+  settings = await fetchApi('/settings');
+} catch (e) {}
+
+const postsPerPage = Number(settings.posts_per_page) || 9;
+
+let data = { articles: [], pagination: { totalPages: 1, page: 1 } };
+let error = null;
+
+try {
+  data = await api.getArticles(page, postsPerPage);
+} catch (e) {
+  error = 'Gagal memuat artikel. Silakan coba lagi.';
+}
+---
+
+<MainLayout title="Beranda">
+  {page === 1 && (
+    <>
+      <!-- Hero Section: Featured + Recent + Trending -->
+      <HeroSection />
+      
+      <!-- Recent Posts Dark Bar (5 newest posts) -->
+      <RecentPostsBar />
+      
+      <!-- Trending Posts Grid (6 most viewed posts) -->
+      <TrendingPostsGrid />
+      
+      <!-- 3 Column Categories (configurable in admin) -->
+      <ThreeColumnCategories />
+    </>
+  )}
+
+  <!-- Articles Grid -->
+  <section class="latest-section">
+    <h2 class="section-title">{page === 1 ? 'Berita Terkini' : `Halaman ${page}`}</h2>
+    
+    {error ? (
+      <div class="error-message">{error}</div>
+    ) : (
+      <>
+        <div class="articles-grid">
+          {data.articles.map((article: any) => (
+            <ArticleCard article={article} />
+          ))}
+        </div>
+        
+        {data.articles.length === 0 && (
+          <p class="no-articles">Belum ada artikel.</p>
+        )}
+        
+        <Pagination 
+          currentPage={data.pagination.page} 
+          totalPages={data.pagination.totalPages}
+          basePath="/page"
+        />
+      </>
+    )}
+  </section>
+</MainLayout>
+
+<style>
+  .latest-section {
+    margin-top: 2rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-primary);
+    display: inline-block;
+  }
+  
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  
+  @media (max-width: 1000px) {
+    .articles-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .articles-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .articles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .no-articles {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-light);
+  }
+  
+  .error-message {
+    text-align: center;
+    padding: 3rem;
+    color: #dc2626;
+    background: #fef2f2;
+    border-radius: var(--radius-md);
+  }
+</style>
