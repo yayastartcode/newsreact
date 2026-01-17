@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
 
 export default function Login() {
     const { login } = useAuth()
@@ -7,6 +8,20 @@ export default function Login() {
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [settings, setSettings] = useState({ logo: null, site_name: '' })
+
+    useEffect(() => {
+        // Fetch settings for logo
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/settings')
+                setSettings(data)
+            } catch (e) {
+                console.error('Failed to fetch settings')
+            }
+        }
+        fetchSettings()
+    }, [])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -22,12 +37,20 @@ export default function Login() {
         }
     }
 
+    const siteName = settings.site_name || 'NewsReact'
+
     return (
         <div className="login-page">
             <div className="login-box">
-                <h1 className="login-title">
-                    News<span style={{ color: '#2563eb' }}>React</span> Admin
-                </h1>
+                {settings.logo ? (
+                    <div className="login-logo">
+                        <img src={settings.logo} alt={siteName} style={{ maxHeight: '60px', marginBottom: '1rem' }} />
+                    </div>
+                ) : (
+                    <h1 className="login-title">
+                        {siteName} <span style={{ color: '#64748b', fontSize: '0.6em' }}>Admin</span>
+                    </h1>
+                )}
 
                 {error && <div className="login-error">{error}</div>}
 
@@ -39,7 +62,7 @@ export default function Login() {
                             className="form-input"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@news.com"
+                            placeholder="email@domain.com"
                             required
                         />
                     </div>
@@ -60,10 +83,6 @@ export default function Login() {
                         {loading ? 'Masuk...' : 'Masuk'}
                     </button>
                 </form>
-
-                <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>
-                    Default: admin@news.com / admin123
-                </p>
             </div>
         </div>
     )

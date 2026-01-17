@@ -56,8 +56,14 @@ export default function MediaLibrary() {
     }
 
     const copyToClipboard = (url) => {
-        navigator.clipboard.writeText(url)
-        alert('URL disalin!')
+        // Get site domain from API URL environment variable or current origin
+        const apiUrl = import.meta.env.VITE_API_URL || ''
+        // Extract base domain from API URL (remove /api suffix)
+        const baseUrl = apiUrl.replace(/\/api$/, '') || window.location.origin.replace(/\/admin$/, '')
+        const fullUrl = url.startsWith('http') ? url : baseUrl + url
+
+        navigator.clipboard.writeText(fullUrl)
+        alert('URL disalin: ' + fullUrl)
     }
 
     const formatSize = (bytes) => {
