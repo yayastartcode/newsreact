@@ -273,6 +273,41 @@ export default function Settings() {
                             </div>
                         </div>
                     </div>
+                    
+                    {/* Custom Scripts */}
+                    <div className="card">
+                        <div className="card-header">Custom Scripts (Tracking & Verifikasi)</div>
+                        <div className="card-body">
+                            <div className="form-group">
+                                <label className="form-label">Custom Code &lt;head&gt;</label>
+                                <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+                                    Letakkan Google Search Console meta tag, Google Analytics, atau GTM head script di sini.
+                                </p>
+                                <textarea
+                                    className="form-textarea"
+                                    rows={5}
+                                    placeholder="<!-- Paste your code here -->"
+                                    value={settings.head_code || ''}
+                                    onChange={(e) => handleChange('head_code', e.target.value)}
+                                    style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginTop: '1rem' }}>
+                                <label className="form-label">Custom Code &lt;body&gt;</label>
+                                <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+                                    Letakkan GTM body script atau custom widget script di sini.
+                                </p>
+                                <textarea
+                                    className="form-textarea"
+                                    rows={5}
+                                    placeholder="<!-- Paste your code here -->"
+                                    value={settings.body_code || ''}
+                                    onChange={(e) => handleChange('body_code', e.target.value)}
+                                    style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ marginTop: '1.5rem' }}>

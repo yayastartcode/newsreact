@@ -10,7 +10,7 @@ const getPublicSettings = async (req, res) => {
                                   'footer_text', 'social_facebook', 'social_twitter', 
                                   'social_instagram', 'social_youtube', 'trending_category',
                                   'category_column_1', 'category_column_2', 'category_column_3',
-                                  'posts_per_page')
+                                  'posts_per_page', 'head_code', 'body_code')
         `);
 
         // Convert to object

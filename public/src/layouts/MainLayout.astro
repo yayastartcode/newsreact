@@ -101,9 +101,19 @@ const fullImageUrl = getFullImageUrl(image);
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   )}
   
+  <!-- Custom Scripts (Head) -->
+  {settings.head_code && (
+    <Fragment set:html={settings.head_code} />
+  )}
+  
   <title>{fullTitle}</title>
 </head>
 <body>
+  <!-- Custom Scripts (Body) -->
+  {settings.body_code && (
+    <Fragment set:html={settings.body_code} />
+  )}
+
   <Header />
   <NewsTicker />
   <AdSlot position="header" />
