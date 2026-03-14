@@ -129,6 +129,30 @@ const viewCount = article ? (article.view_count || 0) : 0;
 const hasTags = article && article.tags && article.tags.length > 0;
 const hasRelated = relatedArticles && relatedArticles.length > 0;
 const readingTime = article ? calculateReadingTime(article.content) : 1;
+
+// Prepare Schema Markup (JSON-LD)
+const schemaMarkup = article ? {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": articleTitle,
+  "image": [ articleImage ],
+  "datePublished": articlePublishedAt,
+  "dateModified": article.updated_at || articlePublishedAt,
+  "author": [{
+      "@type": "Person",
+      "name": articleAuthorName,
+      "url": `${Astro.site || 'https://beritaonlinenews.com'}/penulis/${article.author_id}`
+    }],
+  "publisher": {
+    "@type": "Organization",
+    "name": "NewsReact",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${Astro.site || 'https://beritaonlinenews.com'}/logo.png`
+    }
+  },
+  "description": articleExcerpt
+} : null;
 ---
 
 {error && (
@@ -150,6 +174,10 @@ const readingTime = article ? calculateReadingTime(article.content) : 1;
     publishedTime={articlePublishedAt}
     author={articleAuthorName}
   >
+    {schemaMarkup && (
+      <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} />
+    )}
+    
     <div class="article-layout">
       <!-- Main Content -->
       <article class="article-content-wrapper">

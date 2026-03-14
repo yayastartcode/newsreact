@@ -24,3 +24,4 @@ server/uploads/*
 !server/uploads/.gitkeep
 public/uploads/
 DEPLOYMENT.md
+user_manual.html
