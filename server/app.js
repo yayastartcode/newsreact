@@ -17,7 +17,7 @@ app.use(helmet({
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : ['http://localhost:4321', 'http://localhost:5173']; // Defaults for dev
 
 app.use(cors({

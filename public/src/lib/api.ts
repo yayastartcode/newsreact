@@ -1,5 +1,9 @@
-// Note: For SSR, we need a server-accessible URL
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+// Use localhost for SSR to avoid slow internal DNS/firewall hair-pinning issues
+const isServer = import.meta.env.SSR;
+const SERVER_API_URL = import.meta.env.INTERNAL_API_URL || 'http://127.0.0.1:5001/api';
+const API_URL = isServer 
+    ? SERVER_API_URL 
+    : (import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api');
 
 export async function fetchApi(endpoint: string, options = {}) {
     try {
